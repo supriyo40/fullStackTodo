@@ -1,8 +1,10 @@
 const express = require("express");
+require("dotenv").config();
 const { Todo } = require("./db");
-const { parseTodo, parseId } = require("./types");
+const { parseTodo, parseId, updateTodo } = require("./types");
 
 const app = express();
+app.use(express.json());
 
 //get todo
 app.get("/todos", async (req, res) => {
@@ -15,7 +17,7 @@ app.get("/todos", async (req, res) => {
 //create todo
 app.post("/todo", async (req, res) => {
   const todo = req.body;
-  const parsedTodo = parseTodo(todo);
+  const parsedTodo = parseTodo.safeParse(todo);
   if (!parsedTodo.success) {
     res.status(400).json({
       error: "valid inputs",
@@ -34,7 +36,7 @@ app.post("/todo", async (req, res) => {
 //completed
 app.put("/completed", async (req, res) => {
   const createPayload = req.body;
-  const parsedId = parseId(createPayload);
+  const parsedId = parseId.safeParse(createPayload);
   if (!parsedId.success) {
     res.status(411).json({
       error: "valid id",
@@ -43,7 +45,7 @@ app.put("/completed", async (req, res) => {
 
   await Todo.findOneAndUpdate(
     {
-      _id: parsedId.id,
+      _id: createPayload.id,
     },
     {
       completed: true,
@@ -55,36 +57,46 @@ app.put("/completed", async (req, res) => {
 });
 
 //update todo
-app.put("update", async (req, res) => {
+app.put("/update", async (req, res) => {
   const createPayload = req.body;
-  const parsedTodo = parseTodo(createPayload);
+  const parsedTodo = updateTodo.safeParse(createPayload);
   if (!parsedTodo.success) {
     res.status(411).json({
       error: "valid inputs",
     });
   }
+
+  const updatedTodo = {};
+
+  if (createPayload.title) updatedTodo.title = createPayload.title;
+  if (createPayload.description)
+    updatedTodo.description = createPayload.description;
   await Todo.findOneAndUpdate(
     {
       _id: createPayload.id,
     },
-    {
-      title: createPayload.title,
-      description: createPayload.description,
-    }
+    updatedTodo,
+    { new: true }
   );
+  res.json({
+    message: "updated successfully",
+  });
 });
 
 //delete todo
 app.delete("/delete", async (req, res) => {
   const createPayload = req.body;
-  const parsedId = parseId(createPayload);
+  const parsedId = parseId.safeParse(createPayload);
   if (!parsedId.success) {
     res.status(411).json({
       error: "valid id",
     });
   }
   await Todo.findOneAndDelete({
-    _id: parsedId.id,
+    _id: createPayload.id,
+  });
+  res.json({
+    message: "todo deleted",
   });
 });
 
