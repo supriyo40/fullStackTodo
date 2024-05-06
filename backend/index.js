@@ -1,10 +1,13 @@
 const express = require("express");
 require("dotenv").config();
 const { Todo } = require("./db");
+const cors = require("cors");
 const { parseTodo, parseId, updateTodo } = require("./types");
 
 const app = express();
 app.use(express.json());
+
+app.use(cors());
 
 //get todo
 app.get("/todos", async (req, res) => {
